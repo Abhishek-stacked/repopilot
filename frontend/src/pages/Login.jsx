@@ -5,21 +5,28 @@ import { Github } from '../components/ui/GithubIcon';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuthStore } from '../stores/useAuthStore';
+import { GITHUB_OAUTH_URL } from '../services/api';
 
 export const Login = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
-  const [email, setEmail] = useState('abhishek@repopilot.io');
-  const [password, setPassword] = useState('••••••••••••');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(email, password);
-    navigate('/dashboard');
+    setAuthError('');
+    const res = await login(email, password);
+    if (res?.success) {
+      navigate('/dashboard');
+    } else {
+      setAuthError(res?.error || 'Invalid email or password.');
+    }
   };
 
   const handleGitHubOAuth = () => {
-    window.location.href = 'http://localhost:3001/api/auth/github';
+    window.location.href = GITHUB_OAUTH_URL;
   };
 
   return (
@@ -50,6 +57,11 @@ export const Login = () => {
         </div>
 
         {/* Form */}
+        {authError && (
+          <div className="mb-4 p-3 rounded-lg bg-rose-950/40 border border-rose-800/50 text-rose-300 text-xs">
+            {authError}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-300 mb-1.5">Work Email</label>

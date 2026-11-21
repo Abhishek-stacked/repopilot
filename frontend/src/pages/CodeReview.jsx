@@ -26,6 +26,8 @@ export const CodeReview = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [appliedFixes, setAppliedFixes] = useState({});
   const [applyingId, setApplyingId] = useState(null);
+  const [pushedCommits, setPushedCommits] = useState({});
+  const [pushingId, setPushingId] = useState(null);
 
   const findings = mockCodeReviewFindings.filter((f) => 
     severityFilter === 'all' ? true : f.severity === severityFilter
@@ -44,8 +46,29 @@ export const CodeReview = () => {
     }, 700);
   };
 
+  const handlePushToGitHub = (findingId) => {
+    setPushingId(findingId);
+    setTimeout(() => {
+      setPushedCommits(prev => ({
+        ...prev,
+        [findingId]: {
+          hash: 'c4f98a2',
+          branch: selectedRepo?.defaultBranch || 'main',
+          time: 'Just now',
+          deployTriggered: true,
+        }
+      }));
+      setPushingId(null);
+    }, 1200);
+  };
+
   const handleRevertFix = (findingId) => {
     setAppliedFixes(prev => {
+      const next = { ...prev };
+      delete next[findingId];
+      return next;
+    });
+    setPushedCommits(prev => {
       const next = { ...prev };
       delete next[findingId];
       return next;
@@ -199,19 +222,45 @@ export const CodeReview = () => {
                 <div>
                   <span className="text-gray-500">Impact: </span>
                   <span className="text-gray-300">{finding.impact}</span>
+                  {pushedCommits[finding.id] && (
+                    <div className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1.5 font-mono">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Committed to {pushedCommits[finding.id].branch} ({pushedCommits[finding.id].hash}) • Render Auto-Deploy Active 🚀</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center gap-2">
                   {isApplied ? (
-                    <Button
-                      onClick={() => handleRevertFix(finding.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1 text-gray-400 hover:text-white"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Revert Code</span>
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => handleRevertFix(finding.id)}
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1 text-gray-400 hover:text-white"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Revert</span>
+                      </Button>
+
+                      {pushedCommits[finding.id] ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 text-xs font-medium">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Pushed to GitHub</span>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => handlePushToGitHub(finding.id)}
+                          variant="primary"
+                          size="sm"
+                          isLoading={pushingId === finding.id}
+                          className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white"
+                        >
+                          <Zap className="w-3.5 h-3.5" />
+                          <span>Commit & Push to GitHub</span>
+                        </Button>
+                      )}
+                    </>
                   ) : (
                     <Button
                       onClick={() => handleApplyFix(finding.id)}

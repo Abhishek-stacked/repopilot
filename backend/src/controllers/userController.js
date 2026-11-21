@@ -2,10 +2,11 @@ import { User, UsageLog } from '../models/index.js';
 
 export async function updateProfile(req, res, next) {
   try {
-    const { name } = req.body;
+    const { name, avatarUrl } = req.body;
     const user = req.user;
 
     if (name) user.name = name;
+    if (avatarUrl) user.avatarUrl = avatarUrl;
     await user.save();
 
     return res.json({
@@ -14,7 +15,11 @@ export async function updateProfile(req, res, next) {
         id: user.id,
         email: user.email,
         name: user.name,
+        avatarUrl: user.avatarUrl,
+        githubUsername: user.githubUsername,
         plan: user.plan,
+        aiRequestsUsed: user.aiRequestsUsed,
+        aiRequestsLimit: user.aiRequestsLimit,
       },
     });
   } catch (err) {

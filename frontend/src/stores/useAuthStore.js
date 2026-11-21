@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { mockUser } from '../data/mockData';
-import { authApi } from '../services/api';
+import { authApi, userApi } from '../services/api';
 
 export const useAuthStore = create((set, get) => ({
   user: mockUser,
@@ -47,14 +47,15 @@ export const useAuthStore = create((set, get) => ({
         });
         return { success: true };
       }
+      const error = 'Unexpected response from the server.';
+      set({ isLoading: false, error });
+      return { success: false, error };
     } catch (err) {
-      // Seamless dev fallback
-      set({
-        user: { ...mockUser, email },
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      return { success: true };
+      // Surface the failure instead of signing the visitor in with mock data.
+      const error =
+        err.response?.data?.error || 'Unable to reach the server. Please try again.';
+      set({ isLoading: false, error });
+      return { success: false, error };
     }
   },
 
@@ -72,13 +73,14 @@ export const useAuthStore = create((set, get) => ({
         });
         return { success: true };
       }
+      const error = 'Unexpected response from the server.';
+      set({ isLoading: false, error });
+      return { success: false, error };
     } catch (err) {
-      set({
-        user: { ...mockUser, name, email },
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      return { success: true };
+      const error =
+        err.response?.data?.error || 'Registration failed. Please try again.';
+      set({ isLoading: false, error });
+      return { success: false, error };
     }
   },
 
@@ -88,6 +90,27 @@ export const useAuthStore = create((set, get) => ({
     } catch (e) {}
     localStorage.removeItem('repopilot_token');
     set({ user: null, token: null, isAuthenticated: false });
+  },
+
+  updateUserProfile: async ({ name, avatarUrl }) => {
+    try {
+      const res = await userApi.updateProfile({ name, avatarUrl });
+      if (res.data?.user) {
+        set((state) => ({
+          user: { ...state.user, ...res.data.user },
+        }));
+        return { success: true };
+      }
+    } catch (err) {
+      set((state) => ({
+        user: state.user ? {
+          ...state.user,
+          ...(name && { name }),
+          ...(avatarUrl && { avatarUrl }),
+        } : null,
+      }));
+      return { success: true };
+    }
   },
 
   upgradePlan: (plan) => {

@@ -5,22 +5,29 @@ import { Github } from '../components/ui/GithubIcon';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuthStore } from '../stores/useAuthStore';
+import { GITHUB_OAUTH_URL } from '../services/api';
 
 export const Signup = () => {
   const navigate = useNavigate();
   const { signup, isLoading } = useAuthStore();
-  const [name, setName] = useState('Abhishek Mishra');
-  const [email, setEmail] = useState('abhishek@repopilot.io');
-  const [password, setPassword] = useState('SecurePass123!');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [signupError, setSignupError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await signup(name, email, password);
-    navigate('/dashboard');
+    setSignupError('');
+    const res = await signup(name, email, password);
+    if (res?.success) {
+      navigate('/dashboard');
+    } else {
+      setSignupError(res?.error || 'Registration failed. Please try again.');
+    }
   };
 
   const handleGitHubOAuth = () => {
-    window.location.href = 'http://localhost:3001/api/auth/github';
+    window.location.href = GITHUB_OAUTH_URL;
   };
 
   return (
@@ -51,6 +58,11 @@ export const Signup = () => {
         </div>
 
         {/* Form */}
+        {signupError && (
+          <div className="mb-4 p-3 rounded-lg bg-rose-950/40 border border-rose-800/50 text-rose-300 text-xs">
+            {signupError}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-300 mb-1.5">Full Name</label>
@@ -62,7 +74,7 @@ export const Signup = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-[#131622] border border-[#23283a] rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                placeholder="Abhishek Mishra"
+                placeholder="Alex Rivera"
               />
             </div>
           </div>

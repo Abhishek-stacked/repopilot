@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Same-origin by default: the Express app serves this bundle and the API from
+// one host in production, so a relative path follows whatever origin the page
+// was loaded from. A hardcoded http://localhost:3001 made every visitor's
+// browser call its own machine, which failed and fell through to mock data.
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+export const GITHUB_OAUTH_URL = `${API_BASE_URL}/auth/github`;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   User, 
   CreditCard, 
@@ -7,21 +7,85 @@ import {
   CheckCircle2, 
   Sparkles, 
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Camera,
+  Upload,
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { Github } from '../components/ui/GithubIcon';
 import { useAuthStore } from '../stores/useAuthStore';
+import { GITHUB_OAUTH_URL } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 
 export const Settings = () => {
-  const { user, upgradePlan } = useAuthStore();
+  const { user, upgradePlan, updateUserProfile } = useAuthStore();
   const [apiKey, setApiKey] = useState('sk-proj-••••••••••••••••••••••••');
   const [llmProvider, setLlmProvider] = useState('openai'); // 'openai' | 'anthropic' | 'ollama'
+  const [name, setName] = useState(user?.name || '');
+  const [isUpdatingPfp, setIsUpdatingPfp] = useState(false);
+  const [pfpSuccess, setPfpSuccess] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const presetAvatars = [
+    { label: 'Cyberpunk', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' },
+    { label: 'Developer', url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80' },
+    { label: 'Architect', url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80' },
+    { label: 'Security Lead', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80' },
+    { label: 'Identicon', url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user?.email || 'dev')}` },
+  ];
 
   const handleUpgrade = (plan) => {
     upgradePlan(plan);
+  };
+
+  const handlePfpChange = async (newUrl) => {
+    setIsUpdatingPfp(true);
+    await updateUserProfile({ avatarUrl: newUrl });
+    setIsUpdatingPfp(false);
+    setPfpSuccess(true);
+    setTimeout(() => setPfpSuccess(false), 2500);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress image using client-side canvas
+        const canvas = document.createElement('canvas');
+        const maxSize = 250;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        handlePfpChange(compressedDataUrl);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const usagePercent = Math.round(((user?.aiRequestsUsed || 0) / (user?.aiRequestsLimit || 50)) * 100);
@@ -30,38 +94,115 @@ export const Settings = () => {
     <div className="p-6 space-y-8 max-w-5xl mx-auto">
       {/* Title */}
       <div className="pb-6 border-b border-[#1f2433]">
-        <h1 className="text-2xl font-bold text-white">Account Settings & Subscription</h1>
+        <h1 className="text-2xl font-bold text-white">Account Settings & Security</h1>
         <p className="text-xs text-gray-400 mt-1">
-          Manage your GitHub authentication, subscription tier, and external LLM credentials.
+          Manage your personal profile, custom profile picture, GitHub account linking, and security credentials.
         </p>
       </div>
 
-      {/* Profile & GitHub Card */}
+      {/* Profile & PFP Card */}
       <Card className="border-[#23283a] space-y-6">
-        <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-          <User className="w-4 h-4 text-indigo-400" />
-          <span>Profile & Identity</span>
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+            <User className="w-4 h-4 text-indigo-400" />
+            <span>Profile & Custom Profile Picture (PFP)</span>
+          </h2>
+          {pfpSuccess && (
+            <Badge variant="success" size="xs">
+              <Check className="w-3 h-3" />
+              <span>Profile picture updated!</span>
+            </Badge>
+          )}
+        </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#141724] border border-[#23293d]">
-          <div className="flex items-center gap-3">
-            <img
-              src={user?.avatarUrl}
-              alt={user?.name}
-              className="w-12 h-12 rounded-full border border-[#2e344a] object-cover"
-            />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-5 rounded-xl bg-[#141724] border border-[#23293d]">
+          {/* Avatar with upload overlay */}
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <img
+                src={user?.avatarUrl}
+                alt={user?.name || 'User'}
+                className="w-16 h-16 rounded-full border-2 border-indigo-500/50 object-cover shadow-lg"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                title="Upload photo from device"
+                className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer text-white"
+              >
+                <Camera className="w-5 h-5 text-indigo-300" />
+              </button>
+            </div>
+
             <div>
               <div className="font-semibold text-sm text-white">{user?.name}</div>
-              <div className="text-xs text-gray-400">{user?.email}</div>
+              <div className="text-xs text-gray-400 font-mono">{user?.email}</div>
+              <div className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Private & Multi-Tenant Isolated</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a1f2e] border border-[#2b3348] text-xs text-gray-300">
-              <Github className="w-4 h-4 text-white" />
-              <span>Connected as <strong className="text-indigo-400">@{user?.githubUsername}</strong></span>
-            </div>
-            <Badge variant="success" size="xs">OAuth Verified</Badge>
+          {/* Upload and GitHub status */}
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              size="sm"
+              isLoading={isUpdatingPfp}
+              className="gap-2 text-indigo-300 border-indigo-900/60 hover:bg-indigo-950/30"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Upload Custom Photo</span>
+            </Button>
+
+            {user?.githubUsername ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a1f2e] border border-[#2b3348] text-xs text-gray-300">
+                <Github className="w-4 h-4 text-white" />
+                <span>@{user.githubUsername}</span>
+                <Badge variant="success" size="xs">Connected</Badge>
+              </div>
+            ) : (
+              <a href={GITHUB_OAUTH_URL}>
+                <Button variant="secondary" size="sm" className="gap-1.5">
+                  <Github className="w-4 h-4" />
+                  <span>Connect GitHub</span>
+                </Button>
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Preset Avatar Chooser */}
+        <div>
+          <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
+            Or choose a developer avatar preset:
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {presetAvatars.map((preset) => {
+              const isSelected = user?.avatarUrl === preset.url;
+              return (
+                <button
+                  key={preset.label}
+                  onClick={() => handlePfpChange(preset.url)}
+                  className={`flex items-center gap-2 p-1.5 pr-3 rounded-full border transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300 shadow-md shadow-indigo-950/30'
+                      : 'border-[#23283a] bg-[#11141e] text-gray-400 hover:text-white hover:border-gray-600'
+                  }`}
+                >
+                  <img src={preset.url} alt={preset.label} className="w-7 h-7 rounded-full object-cover" />
+                  <span className="text-xs">{preset.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </Card>
