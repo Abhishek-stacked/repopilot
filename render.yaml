@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: repopilot-app
+    name: repopilot
     runtime: node
     plan: free
     region: singapore
-    buildCommand: cd backend && pnpm install && cd ../frontend && pnpm install && pnpm run build
+    buildCommand: corepack enable && pnpm --prefix backend install && pnpm --prefix frontend install && pnpm --prefix frontend run build
     startCommand: cd backend && node server.js
     healthCheckPath: /api/health
     autoDeploy: true
