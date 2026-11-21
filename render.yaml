@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: repopilot-app
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: cd backend && pnpm install && cd ../frontend && pnpm install && pnpm run build
+    startCommand: cd backend && node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://repopilot.onrender.com
+      - key: GITHUB_CALLBACK_URL
+        value: https://repopilot.onrender.com/api/auth/github/callback
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

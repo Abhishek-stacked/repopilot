@@ -1,0 +1,146 @@
+{
+  "users": [
+    {
+      "id": "usr_default_01",
+      "email": "abhishek@repopilot.io",
+      "name": "Abhishek Mishra",
+      "passwordHash": "$2a$10$wT0vV2fT4kPq8eZ5n2A7re1fI.kY59B6fF68j1t7W1wE1w8B5zBGe",
+      "githubId": 4040774,
+      "githubUsername": "abhishek-dev",
+      "githubAccessToken": null,
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "plan": "free",
+      "aiRequestsUsed": 18,
+      "aiRequestsLimit": 50,
+      "createdAt": "2026-11-21T07:48:52.108Z",
+      "updatedAt": "2026-11-21T07:48:52.109Z"
+    },
+    {
+      "id": "id_a1917147f8e901c2",
+      "email": "tester@repopilot.io",
+      "passwordHash": "$2b$10$JTI4/XLrAQaA/cVob28Akuew35pG4.AV2cRJs3GKHcRAKN..4P9bu",
+      "name": "Test Engineer",
+      "avatarUrl": "https://api.dicebear.com/7.x/identicon/svg?seed=tester%40repopilot.io",
+      "createdAt": "2026-11-21T07:49:10.404Z",
+      "updatedAt": "2026-11-21T09:47:03.782Z",
+      "aiRequestsUsed": null
+    }
+  ],
+  "repositories": [
+    {
+      "id": "repo_001",
+      "userId": "usr_default_01",
+      "githubRepoId": 101,
+      "fullName": "repopilot/repopilot-core",
+      "name": "repopilot-core",
+      "description": "Autonomous repository indexing, AST parsing, and RAG semantic engine for codebases.",
+      "language": "TypeScript",
+      "isPrivate": false,
+      "defaultBranch": "main",
+      "indexStatus": "ready",
+      "indexedAt": "2026-11-21T07:48:52.109Z",
+      "fileCount": 142,
+      "sizeKb": 3840,
+      "qualityScore": 94,
+      "createdAt": "2026-11-21T07:48:52.109Z",
+      "updatedAt": "2026-11-21T07:48:52.109Z"
+    },
+    {
+      "id": "repo_002",
+      "userId": "usr_default_01",
+      "githubRepoId": 102,
+      "fullName": "fintech-org/ecommerce-payment-gateway",
+      "name": "ecommerce-payment-gateway",
+      "description": "High-throughput Stripe and PayPal payment orchestration service with webhook retry queues.",
+      "language": "Python",
+      "isPrivate": true,
+      "defaultBranch": "production",
+      "indexStatus": "ready",
+      "indexedAt": "2026-11-21T07:48:52.109Z",
+      "fileCount": 86,
+      "sizeKb": 2150,
+      "qualityScore": 88,
+      "createdAt": "2026-11-21T07:48:52.109Z",
+      "updatedAt": "2026-11-21T07:48:52.109Z"
+    },
+    {
+      "id": "id_cfc1159fb0bff5fe",
+      "userId": "id_a1917147f8e901c2",
+      "fullName": "facebook/react",
+      "name": "react",
+      "description": "GitHub repository facebook/react",
+      "language": "TypeScript",
+      "isPrivate": false,
+      "defaultBranch": "main",
+      "indexStatus": "ready",
+      "indexedAt": "2026-11-21T07:50:01.978Z",
+      "fileCount": 42,
+      "sizeKb": 1450,
+      "qualityScore": 92,
+      "createdAt": "2026-11-21T07:50:01.979Z",
+      "updatedAt": "2026-11-21T07:50:01.979Z"
+    }
+  ],
+  "repositoryFiles": [],
+  "chatSessions": [
+    {
+      "id": "chat_01",
+      "userId": "usr_default_01",
+      "repositoryId": "repo_001",
+      "title": "Explain Authentication Flow & JWT Handling",
+      "createdAt": "2026-11-21T07:48:52.109Z",
+      "updatedAt": "2026-11-21T07:48:52.109Z"
+    },
+    {
+      "id": "id_3f012e9cdf3bf308",
+      "userId": "id_a1917147f8e901c2",
+      "repositoryId": "repo_001",
+      "title": "Verification Session",
+      "createdAt": "2026-11-21T09:47:03.696Z",
+      "updatedAt": "2026-11-21T09:47:03.696Z"
+    }
+  ],
+  "chatMessages": [
+    {
+      "id": "id_7e809c5d2da7e5c4",
+      "sessionId": "id_3f012e9cdf3bf308",
+      "role": "user",
+      "content": "Where is verifyAccessToken function defined?",
+      "tokensUsed": 11,
+      "createdAt": "2026-11-21T09:47:03.710Z",
+      "updatedAt": "2026-11-21T09:47:03.710Z"
+    },
+    {
+      "id": "id_aba9f2039343241a",
+      "sessionId": "id_3f012e9cdf3bf308",
+      "role": "assistant",
+      "content": "Based on your repository codebase search, the requested logic is implemented in **`src/server.ts`** (lines 1–5).\n\n```typescript\nimport express from 'express';\nimport { verifyAccessToken } from './auth/jwt';\nconst app = express();\napp.use('/api', verifyAccessToken);\nexport default app;\n```\n\n### Technical Summary:\n1. **Source Location**: `src/server.ts`\n2. **Relevance Score**: 43.4% semantic match\n3. **AST Entity**: Function/Block boundaries preserve exact line references for verified tracing without hallucinations.",
+      "citations": [
+        {
+          "file": "src/server.ts",
+          "lines": "1-5",
+          "snippet": "import express from 'express'; import { verifyAccessToken } from './auth/jwt'; const app = express(); app.use('/api', verifyAccessToken); export default app;"
+        },
+        {
+          "file": "src/auth/jwt.ts",
+          "lines": "1-13",
+          "snippet": "export const verifyAccessToken = async (req: Request, res: Response, next: NextFunction) => {   const authHeader = req.headers.authorization;   if (!authHeader?.startsWith('Bearer ')) return res.statu"
+        }
+      ],
+      "tokensUsed": 140,
+      "createdAt": "2026-11-21T09:47:03.768Z",
+      "updatedAt": "2026-11-21T09:47:03.768Z"
+    }
+  ],
+  "usageLogs": [
+    {
+      "id": "id_0c4dd34495941395",
+      "userId": "id_a1917147f8e901c2",
+      "action": "chat_query",
+      "repositoryId": "repo_001",
+      "tokensUsed": 140,
+      "createdAt": "2026-11-21T09:47:03.793Z",
+      "updatedAt": "2026-11-21T09:47:03.793Z"
+    }
+  ]
+}
