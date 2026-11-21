@@ -1,35 +1,43 @@
 import { create } from 'zustand';
-import { mockUser } from '../data/mockData';
 import { authApi, userApi } from '../services/api';
 
 export const useAuthStore = create((set, get) => ({
-  user: mockUser,
+  user: null,
   token: localStorage.getItem('repopilot_token') || null,
-  isAuthenticated: true,
+  isAuthenticated: false,
+  // True until the stored token has been checked against the server, so the
+  // route guard does not bounce a signed-in user to /login mid-verification.
+  isBootstrapping: true,
   isLoading: false,
   error: null,
 
   initializeFromToken: async () => {
-    // Check if token was passed in URL query param (e.g. from GitHub OAuth redirect)
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlToken = urlParams.get('token');
+    // A token can also arrive as a query param from the GitHub OAuth redirect.
+    const urlToken = new URLSearchParams(window.location.search).get('token');
     if (urlToken) {
       localStorage.setItem('repopilot_token', urlToken);
-      set({ token: urlToken, isAuthenticated: true });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    const token = localStorage.getItem('repopilot_token');
-    if (!token) return;
+    if (!localStorage.getItem('repopilot_token')) {
+      set({ isBootstrapping: false });
+      return;
+    }
 
     try {
       const res = await authApi.getMe();
-      if (res.data?.user) {
-        set({ user: res.data.user, isAuthenticated: true });
-      }
+      if (!res.data?.user) throw new Error('Session response contained no user.');
+      set({
+        user: res.data.user,
+        token: localStorage.getItem('repopilot_token'),
+        isAuthenticated: true,
+      });
     } catch (err) {
-      // Token expired or invalid
-      console.warn('Session verification fallback:', err.message);
+      // Expired, forged or unrecognised token: stay signed out.
+      localStorage.removeItem('repopilot_token');
+      set({ user: null, token: null, isAuthenticated: false });
+    } finally {
+      set({ isBootstrapping: false });
     }
   },
 
@@ -101,15 +109,12 @@ export const useAuthStore = create((set, get) => ({
         }));
         return { success: true };
       }
+      return { success: false, error: 'Unexpected response from the server.' };
     } catch (err) {
-      set((state) => ({
-        user: state.user ? {
-          ...state.user,
-          ...(name && { name }),
-          ...(avatarUrl && { avatarUrl }),
-        } : null,
-      }));
-      return { success: true };
+      return {
+        success: false,
+        error: err.response?.data?.error || 'Unable to save your profile.',
+      };
     }
   },
 

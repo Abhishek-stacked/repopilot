@@ -20,59 +20,55 @@ import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 
 export const Repositories = () => {
-  const { 
-    repositories, 
-    searchQuery, 
-    setSearchQuery, 
-    filterLanguage, 
+  const {
+    repositories,
+    searchQuery,
+    setSearchQuery,
+    filterLanguage,
     setFilterLanguage,
-    selectRepo, 
+    selectRepo,
     triggerReindex,
-    connectNewRepo
+    loadRepositories,
+    connectRepository,
   } = useRepoStore();
 
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [newRepoUrl, setNewRepoUrl] = useState('');
+  const [connectError, setConnectError] = useState('');
+
+  React.useEffect(() => {
+    loadRepositories();
+  }, [loadRepositories]);
 
   const languages = ['All', 'TypeScript', 'Python', 'Go'];
 
   const filteredRepos = repositories.filter((repo) => {
-    const matchesSearch = repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          repo.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = `${repo.fullName ?? ''} ${repo.description ?? ''}`
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const matchesLang = filterLanguage === 'All' || repo.language === filterLanguage;
     return matchesSearch && matchesLang;
   });
 
-  const handleConnectSubmit = (e) => {
+  const handleConnectSubmit = async (e) => {
     e.preventDefault();
-    if (!newRepoUrl.trim()) return;
+    setConnectError('');
+    const fullName = newRepoUrl
+      .replace(/^https?:\/\/github\.com\//, '')
+      .replace(/\.git$/, '')
+      .replace(/\/$/, '')
+      .trim();
 
-    const parts = newRepoUrl.replace('https://github.com/', '').split('/');
-    const owner = parts[0] || 'developer';
-    const name = parts[1] || 'new-service';
-    const fullName = `${owner}/${name}`;
+    if (!fullName.includes('/')) {
+      setConnectError('Enter a repository as owner/name, or a full github.com URL.');
+      return;
+    }
 
-    const newRepo = {
-      id: `repo_${Date.now()}`,
-      name,
-      fullName,
-      description: 'Newly connected repository queued for AST parsing and vector embeddings.',
-      language: 'TypeScript',
-      isPrivate: false,
-      stars: 1,
-      forks: 0,
-      fileCount: 42,
-      sizeKb: 1200,
-      indexStatus: 'indexing',
-      indexedAt: 'Indexing now...',
-      defaultBranch: 'main',
-      branches: ['main'],
-      languages: [{ name: 'TypeScript', percentage: 100, color: '#3178c6' }],
-      qualityScore: 92,
-      metrics: { bugs: 0, codeSmells: 2, securityWarnings: 0, duplicateBlocks: 0, testCoverage: '80%' }
-    };
-
-    connectNewRepo(newRepo);
+    const res = await connectRepository(fullName);
+    if (!res.success) {
+      setConnectError(res.error || 'Unable to connect that repository.');
+      return;
+    }
     setShowConnectModal(false);
     setNewRepoUrl('');
   };
@@ -246,14 +242,20 @@ export const Repositories = () => {
                 />
               </div>
 
+              {connectError && (
+                <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-800/50 text-rose-300 text-xs">
+                  {connectError}
+                </div>
+              )}
+
               <div className="p-3 rounded-lg bg-[#151926] border border-[#262c3e] text-[11px] text-gray-400 space-y-1">
                 <div className="flex items-center gap-1.5 text-gray-200 font-medium">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Security & Permissions:</span>
                 </div>
-                <div>• Public repos are fetched anonymously without elevated access.</div>
-                <div>• Private repos require configured GitHub OAuth token scopes.</div>
-                <div>• Source code is parsed for AST embeddings and never shared across tenants.</div>
+                <div>• Connecting a repository stores only its name and owner against your account.</div>
+                <div>• Your repositories are listed only for your own signed-in session.</div>
+                <div>• Source code is not fetched or executed by this server.</div>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">

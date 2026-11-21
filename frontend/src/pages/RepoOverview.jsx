@@ -190,7 +190,7 @@ export function splitCodeByAST(code: string, language: string): CodeChunk[] {
                 Language Breakdown
               </h3>
               <div className="space-y-3">
-                {selectedRepo?.languages.map((l) => (
+                {selectedRepo?.languages?.map((l) => (
                   <div key={l.name} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-200">{l.name}</span>

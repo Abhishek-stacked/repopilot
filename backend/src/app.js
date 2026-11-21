@@ -35,10 +35,14 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // No Origin header means a same-origin navigation, a health probe or curl.
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(null, true); // Allow all dev local origins
+    // Disallowed: omit the CORS headers instead of throwing. Same-origin asset
+    // requests (module scripts send Origin) must still load, and throwing here
+    // turned every page on the deployed app into a 500.
+    return callback(null, false);
   },
   credentials: true,
 }));

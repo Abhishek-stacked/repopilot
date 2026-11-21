@@ -3,12 +3,38 @@ import axios from 'axios';
 const GITHUB_API_URL = 'https://api.github.com';
 const GITHUB_OAUTH_URL = 'https://github.com/login/oauth';
 
-export function getOAuthUrl(state = '') {
+// The callback must be byte-identical to the one registered on the GitHub
+// OAuth App, so it is derived from the host the visitor actually arrived on
+// rather than a baked-in URL that goes stale when the service is renamed.
+export function resolveCallbackUrl(req) {
+  const proto = req?.headers?.['x-forwarded-proto'] || (req?.secure ? 'https' : 'http');
+  // req.hostname drops the port, which produced a callback GitHub rejects for
+  // any deployment not on 80/443. The Host header keeps it (localhost:3001 in
+  // dev, the Render domain on 443), and GitHub still refuses to authorize a
+  // redirect_uri that is not registered on the OAuth App.
+  const host = req?.headers?.host || req?.hostname;
+  const derived = `${proto}://${host}/api/auth/github/callback`;
+
+  // GITHUB_CALLBACK_URL is only an escape hatch for a proxied custom domain;
+  // using it blindly is what pointed every OAuth attempt at a host that no
+  // longer exists. If it disagrees with the host serving this request, the
+  // request wins, because that is the host GitHub will come back to.
+  const configured = process.env.GITHUB_CALLBACK_URL;
+  if (configured && configured === derived) return configured;
+  if (configured) {
+    console.warn(
+      `[GitHub OAuth] GITHUB_CALLBACK_URL (${configured}) does not match the request host; using ${derived}. Register that callback URL on the OAuth App.`
+    );
+  }
+  return derived;
+}
+
+export function getOAuthUrl(state = '', req) {
   const clientId = process.env.GITHUB_CLIENT_ID || '';
-  const redirectUri = process.env.GITHUB_CALLBACK_URL || 'http://localhost:3001/api/auth/github/callback';
+  const redirectUri = resolveCallbackUrl(req);
   const scope = 'read:user user:email repo';
 
-  return `${GITHUB_OAUTH_URL}/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+  return `${GITHUB_OAUTH_URL}/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(state)}`;
 }
 
 export async function exchangeCodeForToken(code) {

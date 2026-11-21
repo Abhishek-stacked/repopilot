@@ -24,7 +24,18 @@ import { Card } from '../components/ui/Card';
 
 export const Dashboard = () => {
   const { user } = useAuthStore();
-  const { repositories, selectRepo, triggerReindex } = useRepoStore();
+  const { repositories, selectRepo, triggerReindex, loadRepositories } = useRepoStore();
+
+  React.useEffect(() => {
+    loadRepositories();
+  }, [loadRepositories]);
+
+  // Without a connected repository these would link to /repo/undefined/...
+  const repoLink = (suffix) =>
+    repositories[0]?.id ? `/repo/${repositories[0].id}/${suffix}` : '/repositories';
+  const requestsUsed = user?.aiRequestsUsed ?? 0;
+  const requestsLimit = user?.aiRequestsLimit ?? 50;
+  const identity = user?.githubUsername ? `@${user.githubUsername}` : user?.email;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -38,7 +49,7 @@ export const Dashboard = () => {
             <Badge variant="primary">v2.0 Active</Badge>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Connected as <span className="text-gray-200 font-mono">@{user?.githubUsername}</span> • pgvector 384-dim semantic index online
+            Signed in as <span className="text-gray-200 font-mono">{identity}</span>
           </p>
         </div>
 
@@ -49,7 +60,7 @@ export const Dashboard = () => {
               <span>Connect Repo</span>
             </Button>
           </Link>
-          <Link to={`/repo/${repositories[0]?.id}/chat`}>
+          <Link to={repoLink('chat')}>
             <Button variant="primary" size="sm" className="gap-2">
               <Bot className="w-4 h-4" />
               <span>New AI Chat</span>
@@ -100,12 +111,12 @@ export const Dashboard = () => {
             <Sparkles className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-bold text-white">
-            {user?.aiRequestsUsed} <span className="text-xs font-normal text-gray-500">/ {user?.aiRequestsLimit}</span>
+            {requestsUsed} <span className="text-xs font-normal text-gray-500">/ {requestsLimit}</span>
           </div>
           <div className="w-full bg-[#1e2333] h-1.5 rounded-full overflow-hidden mt-1">
             <div 
               className="bg-indigo-500 h-full rounded-full" 
-              style={{ width: `${(user?.aiRequestsUsed / user?.aiRequestsLimit) * 100}%` }}
+              style={{ width: `${Math.min(100, (requestsUsed / requestsLimit) * 100)}%` }}
             />
           </div>
         </Card>
@@ -115,7 +126,7 @@ export const Dashboard = () => {
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">AI Intelligence Workspaces</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Link to={`/repo/${repositories[0]?.id}/chat`} onClick={() => selectRepo(repositories[0]?.id)}>
+          <Link to={repoLink('chat')} onClick={() => selectRepo(repositories[0]?.id)}>
             <Card hoverEffect className="group border-[#222738] p-4 flex flex-col justify-between h-32">
               <div className="flex items-center justify-between">
                 <div className="p-2 rounded-lg bg-indigo-950/60 text-indigo-400 border border-indigo-800/40">
@@ -130,7 +141,7 @@ export const Dashboard = () => {
             </Card>
           </Link>
 
-          <Link to={`/repo/${repositories[0]?.id}/review`} onClick={() => selectRepo(repositories[0]?.id)}>
+          <Link to={repoLink('review')} onClick={() => selectRepo(repositories[0]?.id)}>
             <Card hoverEffect className="group border-[#222738] p-4 flex flex-col justify-between h-32">
               <div className="flex items-center justify-between">
                 <div className="p-2 rounded-lg bg-rose-950/60 text-rose-400 border border-rose-800/40">
@@ -145,7 +156,7 @@ export const Dashboard = () => {
             </Card>
           </Link>
 
-          <Link to={`/repo/${repositories[0]?.id}/docs`} onClick={() => selectRepo(repositories[0]?.id)}>
+          <Link to={repoLink('docs')} onClick={() => selectRepo(repositories[0]?.id)}>
             <Card hoverEffect className="group border-[#222738] p-4 flex flex-col justify-between h-32">
               <div className="flex items-center justify-between">
                 <div className="p-2 rounded-lg bg-cyan-950/60 text-cyan-400 border border-cyan-800/40">
@@ -160,7 +171,7 @@ export const Dashboard = () => {
             </Card>
           </Link>
 
-          <Link to={`/repo/${repositories[0]?.id}/tests`} onClick={() => selectRepo(repositories[0]?.id)}>
+          <Link to={repoLink('tests')} onClick={() => selectRepo(repositories[0]?.id)}>
             <Card hoverEffect className="group border-[#222738] p-4 flex flex-col justify-between h-32">
               <div className="flex items-center justify-between">
                 <div className="p-2 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
@@ -245,6 +256,16 @@ export const Dashboard = () => {
                   </td>
                 </tr>
               ))}
+              {repositories.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 px-4 text-center">
+                    <div className="text-sm text-gray-300">No repositories yet</div>
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      Connect a repository to populate this workspace.
+                    </p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

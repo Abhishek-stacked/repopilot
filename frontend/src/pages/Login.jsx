@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, Bot, ArrowRight } from 'lucide-react';
 import { Github } from '../components/ui/GithubIcon';
 import { Button } from '../components/ui/Button';
@@ -13,6 +13,13 @@ export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [searchParams] = useSearchParams();
+
+  // The OAuth callback returns here with ?error= when GitHub sign-in cannot run.
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (oauthError) setAuthError(oauthError);
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import * as githubService from '../services/githubService.js';
@@ -6,7 +7,15 @@ import * as encryptionService from '../services/encryptionService.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'repopilot_super_secret_jwt_key_2026';
 const JWT_EXPIRES_IN = '7d';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5180';
+const OAUTH_STATE_COOKIE = 'gh_oauth_state';
+const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000;
+
+function statesMatch(expected, received) {
+  if (typeof expected !== 'string' || typeof received !== 'string') return false;
+  const a = Buffer.from(expected);
+  const b = Buffer.from(received);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 function generateToken(user) {
   return jwt.sign(
@@ -39,6 +48,9 @@ export async function signup(req, res, next) {
       passwordHash,
       name: name || email.split('@')[0],
       avatarUrl: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(email)}`,
+      plan: 'free',
+      aiRequestsUsed: 0,
+      aiRequestsLimit: 50,
     });
 
     const token = generateToken(user);
@@ -115,16 +127,45 @@ export async function login(req, res, next) {
 }
 
 export function githubOAuth(req, res) {
-  const state = Math.random().toString(36).substring(7);
-  const url = githubService.getOAuthUrl(state);
+  if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
+    // Sending the browser to GitHub without credentials just lands it on a
+    // GitHub error page; say what is missing instead.
+    return res.redirect(
+      `/login?error=${encodeURIComponent('GitHub sign-in is not configured on this deployment. Sign up with email instead.')}`
+    );
+  }
+
+  const state = crypto.randomBytes(16).toString('hex');
+  res.cookie(OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: OAUTH_STATE_MAX_AGE_MS,
+  });
+
+  const url = githubService.getOAuthUrl(state, req);
   res.redirect(url);
 }
 
 export async function githubCallback(req, res, next) {
   try {
-    const { code } = req.query;
+    const { code, state } = req.query;
+    const expectedState = req.cookies?.[OAUTH_STATE_COOKIE];
+    res.clearCookie(OAUTH_STATE_COOKIE, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+
     if (!code) {
-      return res.redirect(`${FRONTEND_URL}/login?error=Missing+authorization+code`);
+      return res.redirect('/login?error=' + encodeURIComponent('Missing authorization code'));
+    }
+
+    // Without this check the callback accepts any code a third party injects.
+    if (!statesMatch(expectedState, state)) {
+      return res.redirect(
+        '/login?error=' + encodeURIComponent('GitHub returned an unexpected state. Start the sign-in again.')
+      );
     }
 
     // 1. Exchange code for access token
@@ -156,6 +197,9 @@ export async function githubCallback(req, res, next) {
           githubUsername: profile.githubUsername,
           githubAccessToken: encryptedToken,
           avatarUrl: profile.avatarUrl,
+          plan: 'free',
+          aiRequestsUsed: 0,
+          aiRequestsLimit: 50,
         });
       }
     } else {
@@ -176,10 +220,10 @@ export async function githubCallback(req, res, next) {
     });
 
     // 6. Redirect to frontend dashboard with token parameter
-    return res.redirect(`${FRONTEND_URL}/dashboard?token=${encodeURIComponent(token)}`);
+    return res.redirect(`/dashboard?token=${encodeURIComponent(token)}`);
   } catch (err) {
     console.error('GitHub OAuth Callback Error:', err.message);
-    return res.redirect(`${FRONTEND_URL}/login?error=${encodeURIComponent(err.message)}`);
+    return res.redirect(`/login?error=${encodeURIComponent(err.message)}`);
   }
 }
 

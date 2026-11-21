@@ -14,9 +14,7 @@ services:
       - key: PORT
         value: 10000
       - key: FRONTEND_URL
-        value: https://repopilot.onrender.com
-      - key: GITHUB_CALLBACK_URL
-        value: https://repopilot.onrender.com/api/auth/github/callback
+        value: https://repopilot-bp8k.onrender.com
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET

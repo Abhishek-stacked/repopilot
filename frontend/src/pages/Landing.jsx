@@ -48,9 +48,9 @@ export const Landing = () => {
               <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
-          <Link to="/dashboard">
+          <Link to="/login">
             <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-              Live Product Demo
+              Sign In
             </Button>
           </Link>
         </div>

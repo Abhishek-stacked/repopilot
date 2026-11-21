@@ -13,7 +13,7 @@ __pycache__/
 # Databases & local data
 *.sqlite
 *.sqlite3
-data/repopilot_db.json
+backend/data/repopilot_db.json
 
 # Builds & Outputs
 dist/

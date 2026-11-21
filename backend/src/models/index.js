@@ -13,74 +13,15 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Initial DB Structure
+// A fresh deployment starts with no accounts and no repositories. Seeding a
+// personal demo user here put one person's name, GitHub handle and a bcrypt
+// hash (with the plaintext in a comment) into every environment, including the
+// public repository.
 const initialData = {
-  users: [
-    {
-      id: 'usr_default_01',
-      email: 'abhishek@repopilot.io',
-      name: 'Abhishek Mishra',
-      passwordHash: '$2a$10$wT0vV2fT4kPq8eZ5n2A7re1fI.kY59B6fF68j1t7W1wE1w8B5zBGe', // 'SecurePass123!'
-      githubId: 4040774,
-      githubUsername: 'abhishek-dev',
-      githubAccessToken: null,
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      plan: 'free',
-      aiRequestsUsed: 18,
-      aiRequestsLimit: 50,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-  ],
-  repositories: [
-    {
-      id: 'repo_001',
-      userId: 'usr_default_01',
-      githubRepoId: 101,
-      fullName: 'repopilot/repopilot-core',
-      name: 'repopilot-core',
-      description: 'Autonomous repository indexing, AST parsing, and RAG semantic engine for codebases.',
-      language: 'TypeScript',
-      isPrivate: false,
-      defaultBranch: 'main',
-      indexStatus: 'ready',
-      indexedAt: new Date().toISOString(),
-      fileCount: 142,
-      sizeKb: 3840,
-      qualityScore: 94,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 'repo_002',
-      userId: 'usr_default_01',
-      githubRepoId: 102,
-      fullName: 'fintech-org/ecommerce-payment-gateway',
-      name: 'ecommerce-payment-gateway',
-      description: 'High-throughput Stripe and PayPal payment orchestration service with webhook retry queues.',
-      language: 'Python',
-      isPrivate: true,
-      defaultBranch: 'production',
-      indexStatus: 'ready',
-      indexedAt: new Date().toISOString(),
-      fileCount: 86,
-      sizeKb: 2150,
-      qualityScore: 88,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-  ],
+  users: [],
+  repositories: [],
   repositoryFiles: [],
-  chatSessions: [
-    {
-      id: 'chat_01',
-      userId: 'usr_default_01',
-      repositoryId: 'repo_001',
-      title: 'Explain Authentication Flow & JWT Handling',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-  ],
+  chatSessions: [],
   chatMessages: [],
   usageLogs: [],
 };

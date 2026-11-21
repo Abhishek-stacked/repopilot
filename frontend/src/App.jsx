@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
@@ -28,18 +29,24 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/repositories" element={<Repositories />} />
-          <Route path="/settings" element={<Settings />} />
         </Route>
 
-        {/* Repository workspace views with sidebar */}
-        <Route element={<AppLayout withSidebar={true} />}>
-          <Route path="/repo/:id" element={<RepoOverview />} />
-          <Route path="/repo/:id/chat" element={<ChatWorkspace />} />
-          <Route path="/repo/:id/review" element={<CodeReview />} />
-          <Route path="/repo/:id/docs" element={<DocsGenerator />} />
-          <Route path="/repo/:id/tests" element={<TestGenerator />} />
+        {/* Everything below requires a verified session */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout withSidebar={false} />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/repositories" element={<Repositories />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+
+          {/* Repository workspace views with sidebar */}
+          <Route element={<AppLayout withSidebar={true} />}>
+            <Route path="/repo/:id" element={<RepoOverview />} />
+            <Route path="/repo/:id/chat" element={<ChatWorkspace />} />
+            <Route path="/repo/:id/review" element={<CodeReview />} />
+            <Route path="/repo/:id/docs" element={<DocsGenerator />} />
+            <Route path="/repo/:id/tests" element={<TestGenerator />} />
+          </Route>
         </Route>
 
         {/* Fallback */}
