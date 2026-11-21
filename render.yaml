@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: corepack enable && pnpm --prefix backend install && pnpm --prefix frontend install && pnpm --prefix frontend run build
+    buildCommand: npx pnpm --prefix backend install && npx pnpm --prefix frontend install && npx pnpm --prefix frontend run build
     startCommand: cd backend && node server.js
     healthCheckPath: /api/health
     autoDeploy: true
